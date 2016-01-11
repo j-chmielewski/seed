@@ -1,25 +1,18 @@
 import sys
 from os.path import expanduser, join
-from collections import namedtuple
 
 from git import Repo
 from git.exc import NoSuchPathError
 from colorama import init, Fore, Style
-import argparse
 
 
 SEED_LIST = join(expanduser('~'), '.seedlist')
-SeedData = namedtuple('SeedData', ['repository', 'tag'])
+
+def print_help():
+    print('TODO: help message')
 
 
-def build_parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('command', help='Command to run')
-
-    return parser
-
-
-def list_seeds():
+def get_seeds():
     repos = []
     with open(SEED_LIST, 'r') as seed_list:
         for path in seed_list:
@@ -34,26 +27,40 @@ def list_seeds():
             if str(tag).startswith('seed'):
                 seeds[tag.commit] = tag
 
+    return seeds
+
+
+def print_seeds():
+    seeds = get_seeds()
     for commit, tag in seeds.items():
         print("{}{}\t{}{}\t{}{}{}".format(Fore.CYAN, commit, Fore.YELLOW, str(tag), Fore.WHITE, tag.tag.message, Style.RESET_ALL))
-
-    return seeds
 
 
 def add_seed():
     # TODO
-    print("Add seed")
+    print("{}Add seed: not implemented{}".format(Fore.RED, Style.RESET_ALL))
+
+
+def plant_seed(seed_id=None):
+    if not seed_id:
+        print("{}Missing seed id{}\n".format(Fore.RED, Style.RESET_ALL))
+        print_help()
+        sys.exit(1)
 
 
 if __name__ == '__main__':
     init()
-    parser = build_parser()
-    args = parser.parse_args()
+    if len(sys.argv) < 2:
+        print_help()
+        sys.exit(1)
 
-    switcher = {
-        'list': list_seeds,
-        'add': add_seed
-    }
-    command = switcher.get(args.command, parser.print_help)
-    command()
-
+    command = sys.argv[1]
+    if command == 'list':
+        print_seeds()
+    elif command == 'add':
+        add_seed(*sys.argv[2:])
+    elif command == 'plant':
+        plant_seed(*sys.argv[2:])
+    else:
+        print_help()
+        exit(1)
