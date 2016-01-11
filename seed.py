@@ -17,7 +17,6 @@ class Seed(object):
     def print_help(self):
         print('TODO: help message')
 
-
     def get_seeds(self):
         repos = []
         with open(self.seed_list, 'r') as seed_list:
@@ -35,17 +34,14 @@ class Seed(object):
 
         return seeds
 
-
     def print_seeds(self):
         seeds = self.get_seeds()
         for commit, tag in seeds.items():
             print("{}{}\t{}{}\t{}{}{}".format(Fore.CYAN, commit, Fore.YELLOW, str(tag), Fore.WHITE, tag.tag.message, Style.RESET_ALL))
 
-
     def add_seed(self):
         # TODO
         print("{}Add seed: not implemented{}".format(Fore.RED, Style.RESET_ALL))
-
 
     def plant_seed(self, seed_id=None):
         if not seed_id:
