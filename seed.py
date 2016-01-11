@@ -1,7 +1,8 @@
 import sys
+from subprocess import call
 from os.path import expanduser, join
 
-from git import Repo
+from git import Git, Repo
 from git.exc import NoSuchPathError
 from colorama import init, Fore, Style
 
@@ -30,7 +31,7 @@ class Seed(object):
         for repo in repos:
             for tag in repo.tags:
                 if str(tag).startswith('seed'):
-                    seeds[tag.commit] = tag
+                    seeds[str(tag.commit)] = tag
 
         return seeds
 
@@ -39,15 +40,43 @@ class Seed(object):
         for commit, tag in seeds.items():
             print("{}{}\t{}{}\t{}{}{}".format(Fore.CYAN, commit, Fore.YELLOW, str(tag), Fore.WHITE, tag.tag.message, Style.RESET_ALL))
 
-    def add_seed(self):
-        # TODO
-        print("{}Add seed: not implemented{}".format(Fore.RED, Style.RESET_ALL))
-
-    def plant_seed(self, seed_id=None):
-        if not seed_id:
-            print("{}Missing seed id{}\n".format(Fore.RED, Style.RESET_ALL))
+    def plant_seed(self, seed_id=None, target_dir=None):
+        if not seed_id or not target_dir:
+            print("{}Missing arguments, seed plant failed{}\n".format(Fore.RED, Style.RESET_ALL))
             self.print_help()
             sys.exit(1)
+
+        seeds = self.get_seeds()
+        tagref = seeds.get(seed_id, None)
+        if not tagref:
+            print("{}Seed id {} not found\n".format(Fore.RED, seed_id, Style.RESET_ALL))
+            sys.exit(1)
+
+        git = Git(tagref.repo.working_dir)
+        current_commit = str(Repo(tagref.repo.working_dir).commit())
+        print("{}Current commit: {}{}".format(Fore.GREEN, current_commit, Style.RESET_ALL))
+        dirty = tagref.repo.is_dirty()
+
+        print("{}Working directory {}{}".format(Fore.GREEN, 'dirty' if dirty else 'clean', Style.RESET_ALL))
+        if dirty:
+            print("{}--> git stash{}".format(Fore.YELLOW, Style.RESET_ALL))
+            git.stash()
+
+        print("{}--> git checkout {}{}".format(Fore.YELLOW, seed_id, Style.RESET_ALL))
+        git.checkout(seed_id)
+
+        try:
+            print("{}Copying seed directory: {}{}".format(Fore.GREEN, tagref.repo.working_dir, Style.RESET_ALL))
+            call(["cp", "-r", tagref.repo.working_dir, target_dir])
+        except OSError as error:
+            print("{}Copying directory failed:\n{}{}".format(Fore.RED, error, Style.RESET_ALL))
+        finally:
+            if dirty:
+                print("{}--> git stash apply{}".format(Fore.YELLOW, Style.RESET_ALL))
+                git.stash('apply')
+
+            print("{}--> git checkout {}{}".format(Fore.YELLOW, current_commit, Style.RESET_ALL))
+            git.checkout(current_commit)
 
 
 if __name__ == '__main__':
@@ -60,8 +89,6 @@ if __name__ == '__main__':
     command = sys.argv[1]
     if command == 'list':
         seed.print_seeds()
-    elif command == 'add':
-        seed.add_seed(*sys.argv[2:])
     elif command == 'plant':
         seed.plant_seed(*sys.argv[2:])
     else:
