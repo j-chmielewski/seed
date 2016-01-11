@@ -19,6 +19,11 @@ Commands:
 \tplant <seed_id> <target_dir>\tplants specified seed in target_dir
 """
 
+
+def cprint(message, color=Style.RESET_ALL):
+    print("{}{}{}".format(color, message, Style.RESET_ALL))
+
+
 class Seed(object):
 
     def __init__(self, seed_list=SEED_LIST):
@@ -27,6 +32,11 @@ class Seed(object):
     def print_help(self):
         print(HELP_STRING)
 
+    def rage_quit(self, message):
+        cprint(message, Fore.RED)
+        self.print_help()
+        sys.exit(1)
+
     def get_seeds(self):
         repos = []
         with open(self.seed_list, 'r') as seed_list:
@@ -34,7 +44,7 @@ class Seed(object):
                 try:
                     repos.append(Repo(path.strip()))
                 except NoSuchPathError:
-                    print("{}WARN: Path {} is not a valid git repository{}".format(Fore.RED, path.strip(), Style.RESET_ALL))
+                    cprint("WARN: Path {} is not a valid git repository".format(path.strip()), Fore.RED)
 
         seeds = {}
         for repo in repos:
@@ -51,40 +61,37 @@ class Seed(object):
 
     def plant_seed(self, seed_id=None, target_dir=None):
         if not seed_id or not target_dir:
-            print("{}Missing arguments, seed plant failed{}\n".format(Fore.RED, Style.RESET_ALL))
-            self.print_help()
-            sys.exit(1)
+            self.rage_quit("Missing arguments, seed plant failed")
 
         seeds = self.get_seeds()
         tagref = seeds.get(seed_id, None)
         if not tagref:
-            print("{}Seed id {} not found\n".format(Fore.RED, seed_id, Style.RESET_ALL))
-            sys.exit(1)
+            self.rage_quit("Seed id {} not found".format(seed_id))
 
         git = Git(tagref.repo.working_dir)
         current_commit = str(Repo(tagref.repo.working_dir).commit())
-        print("{}Current commit: {}{}".format(Fore.GREEN, current_commit, Style.RESET_ALL))
+        cprint("Current commit: {}".format(current_commit), Fore.GREEN)
         dirty = tagref.repo.is_dirty()
 
-        print("{}Working directory {}{}".format(Fore.GREEN, 'dirty' if dirty else 'clean', Style.RESET_ALL))
+        cprint("Working directory {}".format('dirty' if dirty else 'clean'), Fore.GREEN)
         if dirty:
-            print("{}--> git stash{}".format(Fore.YELLOW, Style.RESET_ALL))
+            cprint("--> git stash", Fore.YELLOW)
             git.stash()
 
-        print("{}--> git checkout {}{}".format(Fore.YELLOW, seed_id, Style.RESET_ALL))
+        cprint("--> git checkout {}".format(seed_id), Fore.YELLOW)
         git.checkout(seed_id)
 
         try:
-            print("{}Copying seed directory: {}{}".format(Fore.GREEN, tagref.repo.working_dir, Style.RESET_ALL))
+            cprint("Copying seed directory: {}".format(tagref.repo.working_dir), Fore.GREEN)
             call(["cp", "-r", tagref.repo.working_dir, target_dir])
         except OSError as error:
-            print("{}Copying directory failed:\n{}{}".format(Fore.RED, error, Style.RESET_ALL))
+            cprint("Copying directory failed:\n{}".format(error), Fore.RED)
         finally:
             if dirty:
-                print("{}--> git stash apply{}".format(Fore.YELLOW, Style.RESET_ALL))
+                cprint("--> git stash apply", Fore.YELLOW)
                 git.stash('apply')
 
-            print("{}--> git checkout {}{}".format(Fore.YELLOW, current_commit, Style.RESET_ALL))
+            cprint("--> git checkout {}".format(current_commit), Fore.YELLOW)
             git.checkout(current_commit)
 
 
@@ -101,5 +108,5 @@ if __name__ == '__main__':
     elif command == 'plant':
         seed.plant_seed(*sys.argv[2:])
     else:
-        seed.print_help()
-        exit(1)
+        seed.rage_quit("Unknown command {}".format(command))
+        sys.exit(1)
