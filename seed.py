@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 from subprocess import call
 from os.path import expanduser, join
