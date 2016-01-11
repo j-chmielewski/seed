@@ -8,7 +8,16 @@ from colorama import init, Fore, Style
 
 
 SEED_LIST = join(expanduser('~'), '.seedlist')
+HELP_STRING = """
+Usage:
 
+seed <command> [<args>]
+
+Commands:
+
+\tlist\t\t\t\tlists available seeds
+\tplant <seed_id> <target_dir>\tplants specified seed in target_dir
+"""
 
 class Seed(object):
 
@@ -16,7 +25,7 @@ class Seed(object):
         self.seed_list = seed_list
 
     def print_help(self):
-        print('TODO: help message')
+        print(HELP_STRING)
 
     def get_seeds(self):
         repos = []
