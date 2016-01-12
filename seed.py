@@ -58,8 +58,9 @@ class Seed(object):
 
     def print_seeds(self):
         seeds = self.get_seeds()
+        max_tag_len = max([len(str(tag)) for tag in seeds.values()])
         for commit, tag in seeds.items():
-            print("{}{}\t{}{}\t{}{}{}".format(Fore.CYAN, commit, Fore.YELLOW, str(tag), Fore.WHITE, tag.tag.message, Style.RESET_ALL))
+            print("{}{}  {}{}  {}{}{}".format(Fore.CYAN, commit, Fore.YELLOW, str(tag).ljust(max_tag_len), Fore.WHITE, tag.tag.message, Style.RESET_ALL))
 
     def plant_seed(self, seed_id=None, target_dir=None):
         if not seed_id or not target_dir:
